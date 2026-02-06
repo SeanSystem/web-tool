@@ -212,63 +212,7 @@ export function JsonTool() {
     return (
         <div className="h-full flex flex-col gap-4">
             {/* Top Toolbar - Global Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl">
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setSidebarVisible(!sidebarVisible)}
-                        className={`p-2 rounded-lg transition-colors ${sidebarVisible ? 'bg-[var(--accent-color)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]'}`}
-                        title={sidebarVisible ? "隐藏历史" : "显示历史"}
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={handleExample}
-                        className="px-4 py-2 bg-[var(--accent-color)] hover:bg-[var(--accent-hover)] text-white rounded-lg font-medium transition-colors btn-hover-effect flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        加载示例
-                    </button>
-                    <button
-                        onClick={handleValidate}
-                        className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded-lg font-medium transition-colors btn-hover-effect"
-                    >
-                        校验 JSON
-                    </button>
-                    <button
-                        onClick={handleClear}
-                        className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--error-color)] rounded-lg font-medium transition-colors btn-hover-effect"
-                    >
-                        清空
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                        <span>缩进:</span>
-                        <select
-                            value={indentation}
-                            onChange={(e) => handleIndentChange(Number(e.target.value) as 2 | 4)}
-                            className="px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg focus:outline-none"
-                        >
-                            <option value={2}>2 空格</option>
-                            <option value={4}>4 空格</option>
-                        </select>
-                    </div>
-                    <button
-                        onClick={handleDownload}
-                        className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-                        title="下载 JSON 文件"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+{/* Top Toolbar removed */}
 
             {/* Error display */}
             {error && (
@@ -351,11 +295,45 @@ export function JsonTool() {
                     {/* Left Panel: Input */}
                     <div className="tool-panel flex flex-col flex-1 min-h-0 overflow-hidden">
                         <div className="px-4 h-12 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]/50">
-                            <span className="text-sm font-semibold text-[var(--text-secondary)]">输入 (原始 JSON)</span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setSidebarVisible(!sidebarVisible)}
+                                    className={`p-1.5 rounded-lg transition-colors ${sidebarVisible ? 'bg-[var(--accent-color)] text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--border-color)]'}`}
+                                    title={sidebarVisible ? "隐藏历史" : "显示历史"}
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                                <span className="text-sm font-semibold text-[var(--text-secondary)]">输入</span>
+                            </div>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={handleFormat}
+                                    onClick={handleExample}
+                                    className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded transition-colors flex items-center gap-1"
+                                    title="加载示例"
+                                >
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span className="hidden sm:inline">示例</span>
+                                </button>
+                                <button
+                                    onClick={handleValidate}
                                     className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded transition-colors"
+                                >
+                                    校验
+                                </button>
+                                <button
+                                    onClick={handleClear}
+                                    className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--error-color)] rounded transition-colors"
+                                >
+                                    清空
+                                </button>
+                                <div className="w-px h-4 bg-[var(--border-color)] self-center mx-1"></div>
+                                <button
+                                    onClick={handleFormat}
+                                    className="px-2 py-1 text-xs bg-[var(--accent-color)] text-white hover:bg-[var(--accent-hover)] rounded transition-colors"
                                 >
                                     格式化
                                 </button>
@@ -404,6 +382,18 @@ export function JsonTool() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mr-2">
+                                    <select
+                                        value={indentation}
+                                        onChange={(e) => handleIndentChange(Number(e.target.value) as 2 | 4)}
+                                        className="px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded hover:border-[var(--accent-color)] focus:outline-none transition-colors"
+                                        title="缩进设置"
+                                    >
+                                        <option value={2}>2 空格</option>
+                                        <option value={4}>4 空格</option>
+                                    </select>
+                                </div>
+                                
                                 {viewMode === 'tree' && parsedData && (
                                     <div className="flex gap-1 mr-2">
                                         <button
@@ -426,6 +416,7 @@ export function JsonTool() {
                                         </button>
                                     </div>
                                 )}
+                                <div className="w-px h-4 bg-[var(--border-color)] self-center mx-1"></div>
                                 <button
                                     onClick={() => handleCopy()}
                                     className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded"
@@ -433,6 +424,15 @@ export function JsonTool() {
                                 >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={handleDownload}
+                                    className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded"
+                                    title="下载 JSON"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
                                 </button>
                             </div>

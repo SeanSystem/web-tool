@@ -64,7 +64,7 @@ export function Header({ title = '开发者工具箱' }: HeaderProps) {
 
                         {/* GitHub link */}
                         <a
-                            href="https://github.com"
+                            href="https://github.com/SeanSystem/web-tool.git"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors btn-hover-effect"

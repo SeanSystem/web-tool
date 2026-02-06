@@ -78,56 +78,58 @@ export function MarkdownTool() {
     return (
         <div className="h-full flex flex-col gap-4">
             {/* Toolbar */}
-            <div className="flex flex-wrap gap-2">
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".md,.markdown"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="markdown-file-input"
-                />
-                <label
-                    htmlFor="markdown-file-input"
-                    className="px-4 py-2 bg-[var(--accent-color)] hover:bg-[var(--accent-hover)] text-white rounded-lg font-medium transition-colors btn-hover-effect cursor-pointer inline-flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    上传 .md 文件
-                </label>
-                <button
-                    onClick={handleCopyMarkdown}
-                    className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded-lg font-medium transition-colors btn-hover-effect"
-                >
-                    复制 Markdown
-                </button>
-                <button
-                    onClick={handleCopyHtml}
-                    className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded-lg font-medium transition-colors btn-hover-effect"
-                >
-                    复制 HTML
-                </button>
-                <button
-                    onClick={handleClear}
-                    className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded-lg font-medium transition-colors btn-hover-effect"
-                >
-                    清空
-                </button>
-                <button
-                    onClick={handleExample}
-                    className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded-lg font-medium transition-colors btn-hover-effect ml-auto"
-                >
-                    加载示例
-                </button>
-            </div>
+            {/* Toolbar removed */}
 
             {/* Editor and Preview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
                 {/* Input panel */}
                 <div className="tool-panel flex flex-col flex-1 min-h-0 overflow-hidden">
-                    <div className="px-4 py-2 border-b border-[var(--border-color)] text-sm font-medium text-[var(--text-secondary)]">
-                        编辑器
+                    <div className="px-4 py-2 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]/50">
+                        <span className="text-sm font-semibold text-[var(--text-secondary)]">编辑器</span>
+                        <div className="flex gap-2 items-center">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".md,.markdown"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                id="markdown-file-input"
+                            />
+                            <label
+                                htmlFor="markdown-file-input"
+                                className="px-2 py-1 text-xs bg-[var(--accent-color)] text-white hover:bg-[var(--accent-hover)] rounded transition-colors cursor-pointer flex items-center gap-1"
+                                title="上传 .md 文件"
+                            >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span className="hidden sm:inline">上传</span>
+                            </label>
+                            <button
+                                onClick={handleExample}
+                                className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded transition-colors flex items-center gap-1"
+                                title="加载示例"
+                            >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span className="hidden sm:inline">示例</span>
+                            </button>
+                            <div className="w-px h-4 bg-[var(--border-color)] self-center mx-1"></div>
+                            <button
+                                onClick={handleCopyMarkdown}
+                                className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded transition-colors"
+                                title="复制 Markdown"
+                            >
+                                复制 MD
+                            </button>
+                            <button
+                                onClick={handleClear}
+                                className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--error-color)] rounded transition-colors"
+                            >
+                                清空
+                            </button>
+                        </div>
                     </div>
                     <textarea
                         value={input}
@@ -140,8 +142,16 @@ export function MarkdownTool() {
 
                 {/* Preview panel */}
                 <div className="tool-panel flex flex-col flex-1 min-h-0 overflow-hidden">
-                    <div className="px-4 py-2 border-b border-[var(--border-color)] text-sm font-medium text-[var(--text-secondary)]">
-                        预览
+                    <div className="px-4 py-2 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]/50">
+                        <span className="text-sm font-semibold text-[var(--text-secondary)]">预览</span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleCopyHtml}
+                                className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] rounded transition-colors"
+                            >
+                                复制 HTML
+                            </button>
+                        </div>
                     </div>
                     <div
                         ref={previewRef}
