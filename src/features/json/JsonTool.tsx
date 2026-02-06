@@ -25,6 +25,7 @@ export function JsonTool() {
     const [history, setHistory] = useLocalStorage<HistoryItem[]>('json-tool-history', []);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const inputContainerRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const scrollToTop = useCallback(() => {
         if (inputContainerRef.current) {
@@ -211,6 +212,28 @@ export function JsonTool() {
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     };
 
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target?.result as string;
+            setInput(content);
+            toast.success('文件加载成功');
+            scrollToTop();
+
+            // Reset file input value so same file can be selected again
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        };
+        reader.onerror = () => {
+            toast.error('读取文件失败');
+        };
+        reader.readAsText(file);
+    };
+
     const formatTime = (timestamp: number) => {
         const now = Date.now();
         const diff = now - timestamp;
@@ -320,6 +343,15 @@ export function JsonTool() {
                                     </svg>
                                 </button>
                                 <span className="text-sm font-semibold text-[var(--text-secondary)]">输入</span>
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="p-1.5 ml-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded"
+                                    title="上传文件"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                </button>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -369,6 +401,13 @@ export function JsonTool() {
                                 });
                             }}
                         >
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                accept=".json,application/json"
+                            />
                             <Editor
                                 value={input}
                                 onValueChange={code => setInput(code)}
