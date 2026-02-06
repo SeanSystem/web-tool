@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs';
@@ -24,6 +24,13 @@ export function JsonTool() {
     const [error, setError] = useState<string | null>(null);
     const [history, setHistory] = useLocalStorage<HistoryItem[]>('json-tool-history', []);
     const [sidebarVisible, setSidebarVisible] = useState(true);
+    const inputContainerRef = useRef<HTMLDivElement>(null);
+
+    const scrollToTop = useCallback(() => {
+        if (inputContainerRef.current) {
+            inputContainerRef.current.scrollTop = 0;
+        }
+    }, []);
 
     // Parse input for tree view
     const parsedData = useMemo(() => {
@@ -100,6 +107,7 @@ export function JsonTool() {
             setError(null);
             toast.success('JSON 格式化成功');
             addToHistory(result.result);
+            scrollToTop();
         } else {
             setError(result.error || '无效的 JSON');
             toast.error('无效的 JSON');
@@ -113,6 +121,7 @@ export function JsonTool() {
             setError(null);
             toast.success('JSON 压缩成功');
             addToHistory(result.result);
+            scrollToTop();
         } else {
             setError(result.error || '无效的 JSON');
             toast.error('无效的 JSON');
@@ -150,14 +159,16 @@ export function JsonTool() {
         setInput('');
         setError(null);
         toast.success('已清空');
-    }, [setInput]);
+        scrollToTop();
+    }, [setInput, scrollToTop]);
 
     const handleExample = useCallback(() => {
         const example = getJsonExample();
         setInput(example);
         setError(null);
         toast.success('示例 JSON 已加载');
-    }, [setInput]);
+        scrollToTop();
+    }, [setInput, scrollToTop]);
 
     const handleDownload = useCallback(() => {
         if (!input) return;
@@ -212,7 +223,7 @@ export function JsonTool() {
     return (
         <div className="h-full flex flex-col gap-4">
             {/* Top Toolbar - Global Actions */}
-{/* Top Toolbar removed */}
+            {/* Top Toolbar removed */}
 
             {/* Error display */}
             {error && (
@@ -259,7 +270,10 @@ export function JsonTool() {
                                 history.map(item => (
                                     <div
                                         key={item.id}
-                                        onClick={() => setInput(item.content)}
+                                        onClick={() => {
+                                            setInput(item.content);
+                                            scrollToTop();
+                                        }}
                                         className="p-3 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg hover:border-[var(--accent-color)] cursor-pointer transition-all group relative"
                                     >
                                         <div className="flex justify-between items-start mb-1">
@@ -345,7 +359,16 @@ export function JsonTool() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-auto font-mono-custom bg-transparent">
+                        <div
+                            ref={inputContainerRef}
+                            className="flex-1 overflow-auto font-mono-custom bg-transparent"
+                            onPaste={() => {
+                                // Defer scroll to top to allow paste to happen and React to update
+                                requestAnimationFrame(() => {
+                                    scrollToTop();
+                                });
+                            }}
+                        >
                             <Editor
                                 value={input}
                                 onValueChange={code => setInput(code)}
@@ -393,7 +416,7 @@ export function JsonTool() {
                                         <option value={4}>4 空格</option>
                                     </select>
                                 </div>
-                                
+
                                 {viewMode === 'tree' && parsedData && (
                                     <div className="flex gap-1 mr-2">
                                         <button
