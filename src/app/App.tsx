@@ -3,6 +3,7 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { TabsNav, TabId } from '../components/TabsNav';
 import { JsonTool } from '../features/json/JsonTool';
+import { JsonDiff } from '../features/json/JsonDiff';
 import { MarkdownTool } from '../features/markdown/MarkdownTool';
 import { TimestampTool } from '../features/timestamp/TimestampTool';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -14,6 +15,8 @@ export function App() {
         switch (activeTab) {
             case 'json':
                 return <JsonTool />;
+            case 'json-diff':
+                return <JsonDiff />;
             case 'markdown':
                 return <MarkdownTool />;
             case 'timestamp':

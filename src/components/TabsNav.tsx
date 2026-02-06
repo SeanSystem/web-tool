@@ -1,4 +1,4 @@
-export type TabId = 'json' | 'markdown' | 'timestamp';
+export type TabId = 'json' | 'json-diff' | 'markdown' | 'timestamp';
 
 interface Tab {
     id: TabId;
@@ -18,6 +18,15 @@ const tabs: Tab[] = [
         icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+        ),
+    },
+    {
+        id: 'json-diff',
+        label: 'JSON 对比',
+        icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
         ),
     },

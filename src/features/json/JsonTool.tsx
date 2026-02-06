@@ -113,7 +113,7 @@ export function JsonTool() {
             setError(result.error || '无效的 JSON');
             toast.error('无效的 JSON');
         }
-    }, [input, setInput, addToHistory]);
+    }, [input, setInput, addToHistory, scrollToTop]);
 
     const handleMinify = useCallback(() => {
         const result = minifyJson(input);
@@ -127,7 +127,7 @@ export function JsonTool() {
             setError(result.error || '无效的 JSON');
             toast.error('无效的 JSON');
         }
-    }, [input, setInput, addToHistory]);
+    }, [input, setInput, addToHistory, scrollToTop]);
 
     const handleValidate = useCallback(() => {
         const result = validateJson(input);
@@ -245,9 +245,6 @@ export function JsonTool() {
 
     return (
         <div className="h-full flex flex-col gap-4">
-            {/* Top Toolbar - Global Actions */}
-            {/* Top Toolbar removed */}
-
             {/* Error display */}
             {error && (
                 <div className="px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-[var(--error-color)] text-sm flex justify-between items-center">
@@ -256,7 +253,6 @@ export function JsonTool() {
                 </div>
             )}
 
-            {/* Main Content Area */}
             <div className="flex flex-1 min-h-0 gap-4">
                 {/* Left Sidebar: History */}
                 {sidebarVisible && (
@@ -350,6 +346,15 @@ export function JsonTool() {
                                 >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => handleCopy(input)}
+                                    className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded"
+                                    title="复制输入内容"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8a2 2 0 012 2v8m-2-10V5a2 2 0 00-2-2H8m0 0H6a2 2 0 00-2 2v10a2 2 0 002 2h2" />
                                     </svg>
                                 </button>
                             </div>
@@ -519,6 +524,7 @@ export function JsonTool() {
                                     {parsedData ? (
                                         <ReactJson
                                             src={parsedData}
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                             theme={(isDark ? 'ocean' : 'rhea') as any}
                                             iconStyle="triangle"
                                             collapsed={collapsed}

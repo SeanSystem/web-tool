@@ -318,3 +318,45 @@ pre[class*="language-"] {
 .dark .react-json-view {
   color: #cbd5e1 !important;
 }
+
+/* JSON Diff line highlighting */
+.diff-line {
+  position: relative;
+  padding: 0 8px;
+  min-height: 20px;
+  display: block;
+}
+
+.diff-line-unchanged {
+  background-color: transparent;
+}
+
+.diff-line-added {
+  background-color: rgba(22, 163, 74, 0.15); /* green-600 with opacity */
+  box-shadow: inset 4px 0 0 rgba(22, 163, 74, 0.8);
+}
+
+.diff-line-removed {
+  background-color: rgba(220, 38, 38, 0.18); /* red-600 with opacity */
+  box-shadow: inset 4px 0 0 rgba(220, 38, 38, 0.85);
+}
+
+.diff-line-modified {
+  background-color: rgba(234, 179, 8, 0.16); /* amber-500 with opacity */
+  box-shadow: inset 4px 0 0 rgba(234, 179, 8, 0.9);
+}
+
+.dark .diff-line-added {
+  background-color: rgba(22, 163, 74, 0.28);
+  box-shadow: inset 4px 0 0 rgba(34, 197, 94, 0.95);
+}
+
+.dark .diff-line-removed {
+  background-color: rgba(248, 113, 113, 0.3);
+  box-shadow: inset 4px 0 0 rgba(248, 113, 113, 1);
+}
+
+.dark .diff-line-modified {
+  background-color: rgba(234, 179, 8, 0.35);
+  box-shadow: inset 4px 0 0 rgba(250, 204, 21, 1);
+}
