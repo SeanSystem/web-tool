@@ -303,6 +303,143 @@ pre[class*="language-"] {
   color: #818cf8;
 }
 
+/* =============================================
+   JSON Input Panel - Warm Color Scheme
+   ============================================= */
+
+/* Light mode - Input panel */
+.json-input .token.punctuation {
+  color: #78716c;
+}
+
+.json-input .token.property {
+  color: #b45309;
+}
+
+.json-input .token.string {
+  color: #0d9488;
+}
+
+.json-input .token.number,
+.json-input .token.boolean {
+  color: #d97706;
+}
+
+.json-input .token.operator {
+  color: #78716c;
+}
+
+/* Dark mode - Input panel */
+.dark .json-input .token.punctuation {
+  color: #a8a29e;
+}
+
+.dark .json-input .token.property {
+  color: #fbbf24;
+}
+
+.dark .json-input .token.string {
+  color: #2dd4bf;
+}
+
+.dark .json-input .token.number,
+.dark .json-input .token.boolean {
+  color: #fb923c;
+}
+
+.dark .json-input .token.operator {
+  color: #a8a29e;
+}
+
+/* =============================================
+   JSON Output Panel - Cool Color Scheme
+   ============================================= */
+
+/* Light mode - Output panel */
+.json-output .token.punctuation {
+  color: #6b7280;
+}
+
+.json-output .token.property {
+  color: #7c3aed;
+}
+
+.json-output .token.string {
+  color: #059669;
+}
+
+.json-output .token.number,
+.json-output .token.boolean {
+  color: #2563eb;
+}
+
+.json-output .token.operator {
+  color: #6b7280;
+}
+
+/* Dark mode - Output panel */
+.dark .json-output .token.punctuation {
+  color: #9ca3af;
+}
+
+.dark .json-output .token.property {
+  color: #a78bfa;
+}
+
+.dark .json-output .token.string {
+  color: #34d399;
+}
+
+.dark .json-output .token.number,
+.dark .json-output .token.boolean {
+  color: #60a5fa;
+}
+
+.dark .json-output .token.operator {
+  color: #9ca3af;
+}
+
+/* =============================================
+   JSON Error Line Highlighting
+   ============================================= */
+
+.json-line {
+  display: inline-block;
+  width: 100%;
+  margin: 0 -20px;
+  padding: 0 20px;
+  box-sizing: content-box;
+}
+
+.json-line-valid {
+  background-color: rgba(16, 185, 129, 0.06);
+}
+
+.json-line-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-left: 3px solid #ef4444;
+  margin-left: -23px;
+  padding-left: 17px;
+}
+
+.json-line-after-error {
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+/* Dark mode overrides */
+.dark .json-line-valid {
+  background-color: rgba(52, 211, 153, 0.08);
+}
+
+.dark .json-line-error {
+  background-color: rgba(248, 113, 113, 0.2);
+  border-left-color: #f87171;
+}
+
+.dark .json-line-after-error {
+  background-color: rgba(251, 191, 36, 0.1);
+}
+
 /* React Simple Code Editor overrides */
 .npm-react-simple-code-editor__textarea {
   outline: none !important;
@@ -315,8 +452,65 @@ pre[class*="language-"] {
   padding: 1rem !important;
 }
 
+/* Output tree view - Cool color scheme for keys */
+.react-json-view .object-key {
+  color: #7c3aed !important;
+}
+
+/* String values */
+.react-json-view .string-value {
+  color: #059669 !important;
+}
+
+/* Number values (int + float) */
+.react-json-view .integer-value,
+.react-json-view .float-value {
+  color: #2563eb !important;
+}
+
+/* Boolean values */
+.react-json-view .boolean-value {
+  color: #9333ea !important;
+}
+
+/* Null values */
+.react-json-view .null-value {
+  color: #dc2626 !important;
+}
+
+/* Array/Object size labels */
+.react-json-view .object-size {
+  color: #94a3b8 !important;
+}
+
+/* Dark mode overrides */
 .dark .react-json-view {
   color: #cbd5e1 !important;
+}
+
+.dark .react-json-view .object-key {
+  color: #a78bfa !important;
+}
+
+.dark .react-json-view .string-value {
+  color: #34d399 !important;
+}
+
+.dark .react-json-view .integer-value,
+.dark .react-json-view .float-value {
+  color: #60a5fa !important;
+}
+
+.dark .react-json-view .boolean-value {
+  color: #c084fc !important;
+}
+
+.dark .react-json-view .null-value {
+  color: #f87171 !important;
+}
+
+.dark .react-json-view .object-size {
+  color: #64748b !important;
 }
 
 /* JSON Diff line highlighting */

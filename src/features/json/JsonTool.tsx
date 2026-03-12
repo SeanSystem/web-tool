@@ -6,7 +6,7 @@ import 'prismjs/components/prism-json';
 import ReactJson from 'react-json-view';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { useTheme } from '../../hooks/useTheme';
-import { formatJson, minifyJson, validateJson, getJsonExample } from './jsonUtils';
+import { formatJson, minifyJson, validateJson, getJsonExample, type JsonErrorInfo, parseJsonError } from './jsonUtils';
 
 interface HistoryItem {
     id: string;
@@ -18,7 +18,7 @@ interface HistoryItem {
 export function JsonTool() {
     const { isDark } = useTheme();
     const [input, setInput] = useLocalStorage('json-tool-input', '');
-    const [viewMode, setViewMode] = useState<'code' | 'tree'>('code');
+    const [viewMode, setViewMode] = useState<'code' | 'tree'>('tree');
     const [indentation, setIndentation] = useState<2 | 4>(2);
     const [collapsed, setCollapsed] = useState<boolean | number>(false);
     const [error, setError] = useState<string | null>(null);
@@ -33,14 +33,42 @@ export function JsonTool() {
         }
     }, []);
 
-    // Parse input for tree view
-    const parsedData = useMemo(() => {
+    // Real-time validation: parse input and detect errors with position
+    const { parsedData, errorInfo } = useMemo(() => {
+        if (!input || !input.trim()) {
+            return { parsedData: null, errorInfo: null as JsonErrorInfo | null };
+        }
         try {
-            return input ? JSON.parse(input) : null;
-        } catch {
-            return null;
+            const data = JSON.parse(input);
+            return { parsedData: data, errorInfo: null as JsonErrorInfo | null };
+        } catch (e) {
+            const info = parseJsonError(input, e);
+            return { parsedData: null, errorInfo: info };
         }
     }, [input]);
+
+    // Custom highlight function that marks error lines with background colors
+    const highlightWithErrors = useCallback((code: string) => {
+        const highlighted = highlight(code, languages.json, 'json');
+        if (!errorInfo) {
+            return highlighted;
+        }
+        const errorLine = errorInfo.line; // 1-indexed
+        const lines = highlighted.split('\n');
+        return lines.map((line, idx) => {
+            const lineNum = idx + 1;
+            if (lineNum < errorLine) {
+                // Valid line
+                return `<span class="json-line json-line-valid">${line}</span>`;
+            } else if (lineNum === errorLine) {
+                // Error line
+                return `<span class="json-line json-line-error">${line}</span>`;
+            } else {
+                // After error
+                return `<span class="json-line json-line-after-error">${line}</span>`;
+            }
+        }).join('\n');
+    }, [errorInfo]);
 
     const addToHistory = useCallback((content: string) => {
         if (!content || content.trim() === '' || content.trim() === '{}' || content.trim() === '[]') return;
@@ -398,7 +426,7 @@ export function JsonTool() {
                         </div>
                         <div
                             ref={inputContainerRef}
-                            className="flex-1 overflow-auto font-mono-custom bg-transparent"
+                            className="flex-1 overflow-auto font-mono-custom bg-transparent json-input"
                             onPaste={() => {
                                 // Defer scroll to top to allow paste to happen and React to update
                                 requestAnimationFrame(() => {
@@ -416,7 +444,7 @@ export function JsonTool() {
                             <Editor
                                 value={input}
                                 onValueChange={code => setInput(code)}
-                                highlight={code => highlight(code, languages.json, 'json')}
+                                highlight={highlightWithErrors}
                                 padding={20}
                                 className="min-h-full"
                                 style={{
@@ -506,7 +534,7 @@ export function JsonTool() {
                         </div>
                         <div className="flex-1 overflow-auto bg-[var(--bg-primary)]/30">
                             {viewMode === 'code' ? (
-                                <div className="h-full font-mono-custom">
+                                <div className="h-full font-mono-custom json-output">
                                     <Editor
                                         value={parsedData ? JSON.stringify(parsedData, null, indentation) : input}
                                         onValueChange={() => { }} // Read-only
@@ -524,8 +552,24 @@ export function JsonTool() {
                                     {parsedData ? (
                                         <ReactJson
                                             src={parsedData}
-                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                            theme={(isDark ? 'ocean' : 'rhea') as any}
+                                            theme={{
+                                                base00: 'transparent',                           // background
+                                                base01: isDark ? '#1e293b' : '#f1f5f9',         // lighter bg
+                                                base02: isDark ? '#334155' : '#e2e8f0',         // selection
+                                                base03: isDark ? '#64748b' : '#94a3b8',         // comments
+                                                base04: isDark ? '#94a3b8' : '#64748b',         // dark fg
+                                                base05: isDark ? '#cbd5e1' : '#334155',         // default fg
+                                                base06: isDark ? '#e2e4e8' : '#1e293b',         // light fg
+                                                base07: isDark ? '#f8fafc' : '#0f172a',         // lightest fg
+                                                base08: isDark ? '#f87171' : '#dc2626',         // null/undefined
+                                                base09: isDark ? '#60a5fa' : '#2563eb',         // numbers (blue - matches output)
+                                                base0A: isDark ? '#fbbf24' : '#d97706',         // object size labels
+                                                base0B: isDark ? '#34d399' : '#059669',         // strings (green - matches output)
+                                                base0C: isDark ? '#22d3ee' : '#0891b2',         // array indices
+                                                base0D: isDark ? '#a78bfa' : '#7c3aed',         // keys (purple - matches output)
+                                                base0E: isDark ? '#c084fc' : '#9333ea',         // booleans
+                                                base0F: isDark ? '#fb923c' : '#ea580c',         // integers
+                                            }}
                                             iconStyle="triangle"
                                             collapsed={collapsed}
                                             displayDataTypes={false}
@@ -548,12 +592,124 @@ export function JsonTool() {
                                                 addToHistory(newContent);
                                             }}
                                         />
+                                    ) : errorInfo ? (
+                                        <div className="h-full flex flex-col p-6 gap-4 overflow-auto">
+                                            {/* Error Header */}
+                                            <div className="flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                                <svg className="w-5 h-5 text-[var(--error-color)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-[var(--error-color)]">JSON 格式错误</p>
+                                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">输入的 JSON 数据存在语法错误</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Error Details */}
+                                            <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg overflow-hidden">
+                                                <div className="px-4 py-2.5 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)]/50">
+                                                    <span className="text-xs font-semibold text-[var(--text-secondary)]">错误详情</span>
+                                                </div>
+                                                <div className="p-4 space-y-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-xs text-[var(--text-muted)] whitespace-nowrap mt-0.5">错误信息：</span>
+                                                        <span className="text-sm text-[var(--error-color)] font-mono-custom break-all">{errorInfo.message}</span>
+                                                    </div>
+                                                    <div className="flex gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-[var(--text-muted)]">行号：</span>
+                                                            <span className="text-sm font-semibold text-[var(--text-primary)] bg-[var(--bg-tertiary)] px-2 py-0.5 rounded">{errorInfo.line}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-[var(--text-muted)]">列号：</span>
+                                                            <span className="text-sm font-semibold text-[var(--text-primary)] bg-[var(--bg-tertiary)] px-2 py-0.5 rounded">{errorInfo.column}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-[var(--text-muted)]">位置：</span>
+                                                            <span className="text-sm font-semibold text-[var(--text-primary)] bg-[var(--bg-tertiary)] px-2 py-0.5 rounded">{errorInfo.position}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Error Context: show the offending line */}
+                                            {(() => {
+                                                const lines = input.split('\n');
+                                                const errLine = errorInfo.line - 1; // 0-indexed
+                                                const startLine = Math.max(0, errLine - 2);
+                                                const endLine = Math.min(lines.length - 1, errLine + 2);
+                                                const contextLines = lines.slice(startLine, endLine + 1);
+                                                return (
+                                                    <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg overflow-hidden">
+                                                        <div className="px-4 py-2.5 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)]/50">
+                                                            <span className="text-xs font-semibold text-[var(--text-secondary)]">错误位置</span>
+                                                        </div>
+                                                        <div className="font-mono-custom text-xs overflow-x-auto">
+                                                            {contextLines.map((line, idx) => {
+                                                                const realLineNum = startLine + idx + 1;
+                                                                const isErrorLine = realLineNum === errorInfo.line;
+                                                                return (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className={`flex ${
+                                                                            isErrorLine
+                                                                                ? 'bg-red-500/15 border-l-2 border-red-500'
+                                                                                : 'border-l-2 border-transparent'
+                                                                        }`}
+                                                                    >
+                                                                        <span className={`px-3 py-1 text-right select-none min-w-[3rem] ${
+                                                                            isErrorLine
+                                                                                ? 'text-[var(--error-color)] font-bold'
+                                                                                : 'text-[var(--text-muted)]'
+                                                                        }`}>
+                                                                            {realLineNum}
+                                                                        </span>
+                                                                        <span className={`px-2 py-1 flex-1 whitespace-pre ${
+                                                                            isErrorLine
+                                                                                ? 'text-[var(--error-color)]'
+                                                                                : 'text-[var(--text-secondary)]'
+                                                                        }`}>
+                                                                            {line || ' '}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {/* Column pointer for error line */}
+                                                            {errorInfo.column > 0 && (
+                                                                <div className="flex border-l-2 border-transparent">
+                                                                    <span className="px-3 py-0 min-w-[3rem]"></span>
+                                                                    <span className="px-2 text-[var(--error-color)] font-bold whitespace-pre">
+                                                                        {' '.repeat(Math.max(0, errorInfo.column - 1))}^
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* Color Legend */}
+                                            <div className="flex items-center gap-4 text-xs text-[var(--text-muted)] pt-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40"></span>
+                                                    <span>合法部分</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-sm bg-red-500/20 border border-red-500/40"></span>
+                                                    <span>错误位置</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-sm bg-orange-500/15 border border-orange-500/30"></span>
+                                                    <span>受影响部分</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 text-center mt-10">
                                             <svg className="w-12 h-12 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
-                                            <p>无效的 JSON，无法显示树视图。</p>
+                                            <p>请在左侧输入 JSON 数据</p>
                                         </div>
                                     )}
                                 </div>

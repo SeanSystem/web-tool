@@ -34,10 +34,81 @@ export function minifyJson(input: string): { success: boolean; result: string; e
     }
 }
 
+export interface JsonErrorInfo {
+    message: string;
+    line: number;      // 1-indexed
+    column: number;    // 1-indexed
+    position: number;  // 0-indexed character offset
+}
+
+/**
+ * Parse JSON error to extract position information
+ */
+export function parseJsonError(input: string, error: unknown): JsonErrorInfo {
+    const msg = error instanceof Error ? error.message : '无效的 JSON';
+
+    // Try to extract position from error message
+    // Chrome/V8 format: "... at position 123" or "... at line X column Y"
+    let position = -1;
+    let line = 1;
+    let column = 1;
+
+    const posMatch = msg.match(/position\s+(\d+)/i);
+    if (posMatch) {
+        position = parseInt(posMatch[1], 10);
+    }
+
+    const lineColMatch = msg.match(/line\s+(\d+)\s+column\s+(\d+)/i);
+    if (lineColMatch) {
+        line = parseInt(lineColMatch[1], 10);
+        column = parseInt(lineColMatch[2], 10);
+    } else if (position >= 0) {
+        // Calculate line/column from position
+        let currentPos = 0;
+        const lines = input.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            if (currentPos + lines[i].length >= position) {
+                line = i + 1;
+                column = position - currentPos + 1;
+                break;
+            }
+            currentPos += lines[i].length + 1; // +1 for \n
+        }
+    }
+
+    // If we still don't have a position, try to find it by parsing character by character
+    if (position < 0) {
+        // Attempt incremental parse to find error location
+        for (let i = input.length; i > 0; i--) {
+            try {
+                JSON.parse(input.substring(0, i));
+                position = i;
+                break;
+            } catch {
+                // continue
+            }
+        }
+        if (position < 0) position = 0;
+        // Recalculate line/column
+        let currentPos = 0;
+        const lines = input.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            if (currentPos + lines[i].length >= position) {
+                line = i + 1;
+                column = position - currentPos + 1;
+                break;
+            }
+            currentPos += lines[i].length + 1;
+        }
+    }
+
+    return { message: msg, line, column, position };
+}
+
 /**
  * Validate JSON syntax
  */
-export function validateJson(input: string): { valid: boolean; error?: string } {
+export function validateJson(input: string): { valid: boolean; error?: string; errorInfo?: JsonErrorInfo } {
     if (!input.trim()) {
         return { valid: false, error: '输入内容为空' };
     }
@@ -46,8 +117,8 @@ export function validateJson(input: string): { valid: boolean; error?: string } 
         JSON.parse(input);
         return { valid: true };
     } catch (e) {
-        const error = e instanceof Error ? e.message : '无效的 JSON';
-        return { valid: false, error };
+        const errorInfo = parseJsonError(input, e);
+        return { valid: false, error: errorInfo.message, errorInfo };
     }
 }
 
