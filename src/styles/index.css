@@ -536,8 +536,28 @@ pre[class*="language-"] {
 }
 
 .diff-line-modified {
-  background-color: rgba(234, 179, 8, 0.16); /* amber-500 with opacity */
-  box-shadow: inset 4px 0 0 rgba(234, 179, 8, 0.9);
+  background-color: rgba(245, 158, 11, 0.08); /* Amber-500/8 */
+}
+
+/* Active Highlight for Navigation */
+.diff-line-active {
+  position: relative;
+}
+
+.diff-line-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dark .diff-line-active::after {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark .diff-line-added {
@@ -553,4 +573,81 @@ pre[class*="language-"] {
 .dark .diff-line-modified {
   background-color: rgba(234, 179, 8, 0.35);
   box-shadow: inset 4px 0 0 rgba(250, 204, 21, 1);
+}
+
+/* Merge Gutter and Brackets */
+.merge-gutter {
+  width: 40px;
+  background-color: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.merge-bracket-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.merge-bracket {
+  position: absolute;
+  left: 8px;
+  right: 20px;
+  border: 1px solid var(--border-color);
+  border-right: none;
+  pointer-events: none;
+}
+
+.merge-bracket::before,
+.merge-bracket::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  width: 10px;
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.merge-bracket::before {
+  top: -1px;
+}
+
+.merge-bracket::after {
+  bottom: -1px;
+}
+
+.merge-button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.merge-button:hover {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.merge-button svg {
+  width: 14px;
+  height: 14px;
 }

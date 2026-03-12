@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -104,6 +104,126 @@ export function JsonDiff() {
         [oldJson, newJson],
     );
 
+    // Group contiguous changes into unified diff groups for navigation and merge
+    const diffGroups = useMemo(() => {
+        const groups: {
+            type: 'added' | 'removed' | 'modified';
+            oldRange: { start: number; end: number };
+            newRange: { start: number; end: number };
+        }[] = [];
+
+        // This is a simplified alignment based on the ops. 
+        // For the merge feature, we need to know which lines in old map to which lines in new.
+        // Let's re-run a simplified grouping based on the statuses.
+        
+        let oldIdx = 0;
+        let newIdx = 0;
+        
+        while (oldIdx < oldStatuses.length || newIdx < newStatuses.length) {
+            if (oldStatuses[oldIdx] === 'unchanged' && newStatuses[newIdx] === 'unchanged') {
+                oldIdx++;
+                newIdx++;
+                continue;
+            }
+
+            const startOld = oldIdx;
+            const startNew = newIdx;
+            let type: 'added' | 'removed' | 'modified' = 'modified';
+
+            // Collect contiguous changes
+            if (oldStatuses[oldIdx] === 'removed' && (newStatuses[newIdx] === 'unchanged' || newIdx >= newStatuses.length)) {
+                type = 'removed';
+                while (oldIdx < oldStatuses.length && oldStatuses[oldIdx] === 'removed') oldIdx++;
+            } else if (newStatuses[newIdx] === 'added' && (oldStatuses[oldIdx] === 'unchanged' || oldIdx >= oldStatuses.length)) {
+                type = 'added';
+                while (newIdx < newStatuses.length && newStatuses[newIdx] === 'added') newIdx++;
+            } else {
+                type = 'modified';
+                // A modification can be a mix of removed then added, or just modified status
+                while (oldIdx < oldStatuses.length && (oldStatuses[oldIdx] === 'removed' || oldStatuses[oldIdx] === 'modified')) oldIdx++;
+                while (newIdx < newStatuses.length && (newStatuses[newIdx] === 'added' || newStatuses[newIdx] === 'modified')) newIdx++;
+            }
+
+            groups.push({
+                type,
+                oldRange: { start: startOld, end: oldIdx - 1 },
+                newRange: { start: startNew, end: newIdx - 1 }
+            });
+        }
+
+        return groups;
+    }, [oldStatuses, newStatuses]);
+
+    const [currentDiffIndex, setCurrentDiffIndex] = useState(-1);
+
+    const scrollToDiff = (index: number) => {
+        const group = diffGroups[index];
+        if (!group) return;
+
+        // Scroll the old side for removals/modifications, new side for additions
+        const side = group.type === 'added' ? 'new' : 'old';
+        const lineIndex = group.type === 'added' ? group.newRange.start : group.oldRange.start;
+        
+        const elementId = `diff-${side}-${lineIndex}`;
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    const handlePrevDiff = () => {
+        if (diffGroups.length === 0) return;
+        const newIndex = currentDiffIndex <= 0 ? diffGroups.length - 1 : currentDiffIndex - 1;
+        setCurrentDiffIndex(newIndex);
+        scrollToDiff(newIndex);
+    };
+
+    const handleNextDiff = () => {
+        if (diffGroups.length === 0) return;
+        const newIndex = (currentDiffIndex + 1) % diffGroups.length;
+        setCurrentDiffIndex(newIndex);
+        scrollToDiff(newIndex);
+    };
+
+    const handleMerge = (groupIndex: number) => {
+        const group = diffGroups[groupIndex];
+        if (!group) return;
+
+        const oldLines = oldJson.split('\n');
+        const newLines = newJson.split('\n');
+
+        // Extract the new lines for this range
+        const replacementLines = group.newRange.start > group.newRange.end 
+            ? [] 
+            : newLines.slice(group.newRange.start, group.newRange.end + 1);
+
+        // Replace the old lines
+        const updatedOldLines = [
+            ...oldLines.slice(0, group.oldRange.start),
+            ...replacementLines,
+            ...oldLines.slice(group.oldRange.end + 1)
+        ];
+
+        setOldJson(updatedOldLines.join('\n'));
+        toast.success('已应用更改');
+    };
+
+    // Scroll Sync Refs
+    const oldEditorRef = useRef<HTMLDivElement>(null);
+    const newEditorRef = useRef<HTMLDivElement>(null);
+    const gutterRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>, source: 'old' | 'new') => {
+        const target = source === 'old' ? newEditorRef.current : oldEditorRef.current;
+        if (target) {
+            target.scrollTop = e.currentTarget.scrollTop;
+            target.scrollLeft = e.currentTarget.scrollLeft;
+        }
+        if (gutterRef.current) {
+            gutterRef.current.scrollTop = e.currentTarget.scrollTop;
+        }
+    };
+
     const highlightWithDiff = (code: string, side: 'old' | 'new') => {
         const statuses = side === 'old' ? oldStatuses : newStatuses;
         const lines = code.split('\n');
@@ -112,9 +232,14 @@ export function JsonDiff() {
             .map((line, index) => {
                 const status = statuses[index] ?? 'unchanged';
                 const lineHtml = highlight(line, languages.json, 'json');
-                const cls = `diff-line diff-line-${status}`;
+                const isCurrent = currentDiffIndex >= 0 && 
+                                  ((side === 'old' && diffGroups[currentDiffIndex]?.oldRange.start === index) ||
+                                   (side === 'new' && diffGroups[currentDiffIndex]?.newRange.start === index));
+                
+                const cls = `diff-line diff-line-${status} ${isCurrent ? 'diff-line-active' : ''}`;
                 const content = lineHtml || '&nbsp;';
-                return `<div class="${cls}">${content}</div>`;
+                const id = `diff-${side}-${index}`;
+                return `<div id="${id}" class="${cls}">${content}</div>`;
             })
             .join('');
     };
@@ -133,62 +258,6 @@ export function JsonDiff() {
         }
     };
 
-    const newStyles = {
-        variables: {
-            dark: {
-                diffViewerBackground: '#1e1e1e',
-                diffViewerColor: '#FFF',
-                addedBackground: '#044B53',
-                addedColor: 'white',
-                removedBackground: '#632F34',
-                removedColor: 'white',
-                wordAddedBackground: '#055d67',
-                wordRemovedBackground: '#7d383f',
-                addedGutterBackground: '#034148',
-                removedGutterBackground: '#632b30',
-                gutterBackground: '#1e1e1e',
-                gutterBackgroundDark: '#262626',
-                highlightBackground: '#2a3942',
-                highlightGutterBackground: '#2a3942',
-                codeFoldGutterBackground: '#21232b',
-                codeFoldBackground: '#262831',
-                emptyLineBackground: '#363946',
-                gutterColor: '#464c67',
-                addedGutterColor: '#8c8c8c',
-                removedGutterColor: '#8c8c8c',
-                codeFoldContentColor: '#555a7b',
-                diffViewerTitleBackground: '#2f323e',
-                diffViewerTitleColor: '#555a7b',
-                diffViewerTitleBorderColor: '#353846',
-            },
-            light: {
-                diffViewerBackground: '#fff',
-                diffViewerColor: '#212121',
-                addedBackground: '#e6ffed',
-                addedColor: '#24292e',
-                removedBackground: '#ffeef0',
-                removedColor: '#24292e',
-                wordAddedBackground: '#acf2bd',
-                wordRemovedBackground: '#fdb8c0',
-                addedGutterBackground: '#cdffd8',
-                removedGutterBackground: '#ffdce0',
-                gutterBackground: '#f7f7f7',
-                gutterBackgroundDark: '#f3f1f1',
-                highlightBackground: '#fffbdd',
-                highlightGutterBackground: '#fff5b1',
-                codeFoldGutterBackground: '#dbedff',
-                codeFoldBackground: '#f1f8ff',
-                emptyLineBackground: '#fafbfc',
-                gutterColor: '#212121',
-                addedGutterColor: '#212121',
-                removedGutterColor: '#212121',
-                codeFoldContentColor: '#212121',
-                diffViewerTitleBackground: '#fafbfc',
-                diffViewerTitleColor: '#212121',
-                diffViewerTitleBorderColor: '#eee',
-            }
-        }
-    };
 
     return (
         <div className="h-full flex flex-col gap-4">
@@ -196,6 +265,31 @@ export function JsonDiff() {
             <div className="flex items-center justify-between text-[11px] sm:text-xs text-[var(--text-secondary)] px-1 sm:px-0">
                 <span className="font-medium text-[var(--text-secondary)]">对比结果</span>
                 <div className="flex items-center gap-3">
+                    {diffGroups.length > 0 && (
+                        <div className="flex items-center bg-[var(--bg-tertiary)] rounded-md border border-[var(--border-color)] overflow-hidden mr-2">
+                            <button
+                                onClick={handlePrevDiff}
+                                className="p-1 hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                title="上一个差异"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                            </button>
+                            <span className="px-2 py-0.5 border-x border-[var(--border-color)] text-[10px] font-medium min-w-[45px] text-center">
+                                {currentDiffIndex + 1} / {diffGroups.length}
+                            </span>
+                            <button
+                                onClick={handleNextDiff}
+                                className="p-1 hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                title="下一个差异"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                     <span className="inline-flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-emerald-500/80" />
                         新增行：{newStatuses.filter(status => status === 'added').length}
@@ -214,9 +308,9 @@ export function JsonDiff() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+            <div className="flex flex-1 min-h-0 gap-0">
                 {/* Old JSON Input */}
-                <div className="tool-panel flex flex-col overflow-hidden">
+                <div className="tool-panel flex flex-col overflow-hidden flex-1 border-r-0 rounded-r-none">
                     <div className="px-4 h-10 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]/50">
                         <span className="text-sm font-semibold text-[var(--text-secondary)]">原 JSON</span>
                         <div className="flex gap-2">
@@ -234,7 +328,11 @@ export function JsonDiff() {
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-auto font-mono-custom bg-transparent">
+                    <div 
+                        className="flex-1 overflow-auto font-mono-custom bg-transparent"
+                        ref={oldEditorRef}
+                        onScroll={(e) => handleScroll(e, 'old')}
+                    >
                         <Editor
                             value={oldJson}
                             onValueChange={code => setOldJson(code)}
@@ -249,8 +347,51 @@ export function JsonDiff() {
                     </div>
                 </div>
 
+                {/* Middle Merge Gutter */}
+                <div className="merge-gutter hidden lg:flex flex-col">
+                    <div className="h-10 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/50" />
+                    <div 
+                        className="flex-1 overflow-hidden relative"
+                        ref={gutterRef}
+                    >
+                        {/* We use absolute positioning based on line height (approx 20px) */}
+                        <div className="absolute inset-0">
+                            {diffGroups.map((group, idx) => {
+                                const lineHeight = 20; // Matches CSS min-height
+                                const startLine = Math.min(group.oldRange.start, group.newRange.start);
+                                const endLine = Math.max(group.oldRange.end, group.newRange.end);
+                                const count = endLine - startLine + 1;
+                                
+                                return (
+                                    <div 
+                                        key={idx}
+                                        style={{
+                                            position: 'absolute',
+                                            top: (startLine * lineHeight) + 15, // 15 is padding
+                                            height: count * lineHeight,
+                                            left: 0,
+                                            right: 0
+                                        }}
+                                    >
+                                        <div className="merge-bracket" style={{ height: '100%' }} />
+                                        <button
+                                            className="merge-button"
+                                            onClick={() => handleMerge(idx)}
+                                            title="合并到左侧"
+                                        >
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
                 {/* New JSON Input */}
-                <div className="tool-panel flex flex-col overflow-hidden">
+                <div className="tool-panel flex flex-col overflow-hidden flex-1 border-l-0 rounded-l-none">
                     <div className="px-4 h-10 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]/50">
                         <span className="text-sm font-semibold text-[var(--text-secondary)]">新 JSON</span>
                         <div className="flex gap-2">
@@ -268,7 +409,11 @@ export function JsonDiff() {
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-auto font-mono-custom bg-transparent">
+                    <div 
+                        className="flex-1 overflow-auto font-mono-custom bg-transparent"
+                        ref={newEditorRef}
+                        onScroll={(e) => handleScroll(e, 'new')}
+                    >
                         <Editor
                             value={newJson}
                             onValueChange={code => setNewJson(code)}
